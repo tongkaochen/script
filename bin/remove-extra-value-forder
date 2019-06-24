@@ -1,0 +1,3 @@
+#!/bin/bash
+
+find -name values-* ! -name values-v2* ! -name values-v1* ! -name values-w*dp ! -name values-sw*dp* ! -name values-*dpi ! -name values-large | xargs rm -rf

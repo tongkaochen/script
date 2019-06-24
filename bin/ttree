@@ -1,0 +1,161 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import os, sys
+
+def get_lines_count(filename):
+   
+   count = 0
+   if os.path.isdir(filename):
+       return count
+   thefile = open(filename,'rb')
+
+   while True:
+      buffer = thefile.read(1024 * 8192)
+      if not buffer:
+         break
+      count += buffer.count('\n')
+   thefile.close()
+
+   return count 
+
+def check_exist(path_item):
+    return os.path.exists(path_item)
+        #print 'file : ', path_item, ' is not exist'
+
+def print_foreach(files, space_size):
+    index = 0
+    file_list=[]
+    #文件排序
+    for item in files:
+        if os.path.isfile(item):
+           file_list.insert(index, item)
+           index = index + 1
+    file_list.sort()
+ 
+    dir_list=[]
+    index=0
+    # 文件夹排序
+    for item in files:
+        if os.path.isdir(item):
+           dir_list.insert(index, item)
+           index = index + 1
+    dir_list.sort()
+
+    #print file_list 
+    files=file_list+dir_list
+    index=0
+    for item in files:
+        index = index + 1
+        islast = index == len(files)
+        item = os.path.abspath(item)
+        if os.path.isdir(item):
+           flat_dir(item, space_size, islast)
+        elif os.path.isfile(item):
+           print_file_name(item, space_size, islast)
+        else:
+           print 'ignore ', item
+
+def flat_dir(item, space_size, islast):
+
+    multi_file = len(os.listdir(os.path.dirname(item))) > 1
+    parent_base_name = os.path.basename(os.path.dirname(item))
+    base_name = os.path.basename(item)
+    print_spaces(space_size)
+    if multi_file and not islast:
+        #print ('├─ ' + parent_base_name + '.' + base_name)
+        print '├─', base_name
+    else:
+        #print ('└─ ' + parent_base_name + '.' + base_name)
+        print '└─', base_name
+    base_name_lenght = len(base_name)
+    old_path = os.getcwd()
+    new_dir = old_path+"/" + base_name
+    os.chdir(new_dir)
+    space_size = space_size + 3 + base_name_lenght / 2
+    dirlist = os.listdir(item)
+    dirlist.sort()
+    print_foreach(dirlist, space_size)
+    os.chdir(old_path)
+
+def print_spaces(size):
+     print ' ' * size,
+
+def to_color(target, color):
+    global print_color
+    if not print_color:
+       return target
+    return '\033[1;33;'+bytes(color)+'m'+target+'\033[0m'
+
+def print_file_name(item, space_size, islast):
+    global totalCount
+    global total_lines
+    totalCount = totalCount + 1;
+    print_spaces(space_size) 
+    lines = get_lines_count(item)
+    total_lines = total_lines + lines
+    if show_lines and not os.path.isdir(item):
+       if islast:
+          print '└─',to_color(os.path.basename(item),34),'@'+bytes(lines)
+       else:
+          print '├─',to_color(os.path.basename(item), 34),'@'+bytes(lines)
+    else:
+       if islast:
+          print '└─',to_color(os.path.basename(item), 34)
+       else:
+          print '├─',to_color(os.path.basename(item), 34)
+
+def is_contains(src, dest):
+    return src.__contains__(dest)
+
+def help():
+    print '''
+使用方法：
+1. ttree 
+  默认输出
+2. ttree [options]
+ options:
+    -l 显示文件行数
+    -p 打印java的package信息
+    -c 有颜色输出
+    -h 帮助
+'''
+#### main
+
+current_path = os.getcwd() 
+global totalCount
+totalCount = 0
+if len(sys.argv) > 1:
+   argv = sys.argv[1]
+   if argv.endswith('/') or argv.endswith('\\'):
+      argv = argv[0 : len(argv)-1] 
+   if check_exist(current_path + "/" + argv):
+      current_path = current_path + "/" + argv
+      os.chdir(current_path)
+
+if is_contains(sys.argv,'-help') or is_contains(sys.argv, '-h') or is_contains(sys.argv, '--help'):
+   help()
+   exit()
+list_package = is_contains(sys.argv, '-p')
+if list_package:
+   print "pakcage info start"
+   os.system('tdir')
+   print 'package info end\n\n'
+   
+global show_lines
+global total_lines
+show_lines = is_contains(sys.argv,'-l')
+total_lines = 0
+
+global print_color
+print_color = is_contains(sys.argv,'-c')
+current_dirs = os.listdir(current_path)
+current_dirs.sort()
+print '└─',os.path.basename(current_path)
+
+print_foreach(current_dirs, len(os.path.basename(current_path)))
+
+print 'Total files: ', totalCount
+
+if show_lines:
+   print 'Total lines: ', total_lines

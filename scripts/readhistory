@@ -1,0 +1,50 @@
+#!/bin/bash
+file_name=$1
+current_index=$2
+cache_file="$CACHE_DIR/$file_name"
+
+# the cache file is in $CACHE_DIR dir
+# if $2 is given, get the $2 index history
+
+MAX_INDEX=15
+function choose_item {
+     lines=$(sed -n "$=" $cache_file)
+     max_index=$MAX_INDEX
+     if [ $lines -lt $max_index ]; then
+        max_index=$lines
+     fi
+     
+     if [ "$current_index" != "" ] && [ $current_index -le $lines ]; then
+        # go the $2 index history
+        CHOOSE_RESULT=$(sed -n "${current_index}p" $cache_file)
+     elif [ $lines == 1 ]; then
+        # only 1 history, go to dirctly
+        CHOOSE_RESULT=$(sed -n "1p" $cache_file)
+     else
+        # muilt items history, select by user
+        head -n $max_index $cache_file > temp.file
+        cat -n temp.file
+        rm temp.file
+        while [ $lines -gt 1 ]; do
+           echo -n "Index: "
+           read input
+           echo
+           if [ $input == q ]; then
+               CHOOSE_RESULT=""
+               return
+           fi
+           if [ $input -gt 0 ] && [ $input -le $max_index ]; then
+              break
+           fi
+           echo "Tags value is 1 ~ ${max_index} "
+        done
+        CHOOSE_RESULT=$(sed -n "${input}p" $cache_file)
+        sed -i "${input}d" $cache_file
+        sed -i "1i${CHOOSE_RESULT}" $cache_file 
+        #echo $CHOOSE_RESULT
+     fi
+}
+
+if [ -f $cache_file ]; then
+   choose_item
+fi

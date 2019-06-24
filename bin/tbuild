@@ -1,0 +1,24 @@
+#!/bin/bash
+
+
+log_file="buildlog"
+
+rm $log_file
+apk_list=$(tf *.apk | grep -i camera)
+echo -e "\033[33mStart to build...\033[0m"
+gradle clean aR | tee $log_file
+
+grep -i error $log_file
+
+suc=$(cat $log_file | grep "BUILD SUCCESSFUL")
+if [ "$suc" == "" ]; then
+   exit
+fi
+
+if [ "$1" != "-p" ]; then
+  exit
+fi
+echo -e "\033[32mBuild end! Successful\033[0m"
+
+#systemui-apk-push
+exit

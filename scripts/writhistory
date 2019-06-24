@@ -1,0 +1,20 @@
+#!/bin/bash
+cache_file=$CACHE_DIR$1
+tag_in=$2
+     if [ ! -f $cache_file ]; then
+         touch $cache_file
+         echo $tag_in > $cache_file
+     else
+         lines=$(sed -n "$=" $cache_file)
+         if [ $lines -ge 100 ]; then
+            sed -i "${lines}p" $cache_file
+         fi
+         is_exist=$(head -n 10 $cache_file | grep "${tag_in}")
+         if [ $? == 2 ]; then
+            echo "exit when error"
+            exit
+         fi
+         if [ "" == "$is_exist" ]; then
+             sed -i "1i${tag_in}" $cache_file
+         fi
+     fi

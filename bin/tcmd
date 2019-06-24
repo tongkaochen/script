@@ -1,0 +1,22 @@
+#!/bin/bash
+
+case $1 in
+  "-cl")
+        echo "adb shell am start com.tcl.dmclient/.hiddenMenu.DMConfigList"
+	adb shell am start com.tcl.dmclient/.hiddenMenu.DMConfigList
+	;;
+  "-logc")
+       echo "adb logcat -c"
+       adb logcat -c
+   ;;
+   *)
+     echo "Usage:
+        command [option]
+
+	option list:
+		-cl: Start config list
+                -logc: adb logcat -c
+	"
+   ;;
+
+esac

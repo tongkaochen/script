@@ -1,0 +1,8 @@
+#!/bin/bash
+#source ~/bin/common.sh
+index=$1
+. $HOME/script/readhistory dir_history $index
+if [ "$CHOOSE_RESULT" != "" ]; then
+   echo $CHOOSE_RESULT
+   cd $CHOOSE_RESULT
+fi

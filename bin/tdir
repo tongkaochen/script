@@ -1,0 +1,121 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import os, sys
+
+def get_lines_count(filename):
+   count = 0
+
+   thefile = open(filename,'rb')
+
+   while True:
+      buffer = thefile.read(1024 * 8192)
+      if not buffer:
+         break
+      count += buffer.count('\n')
+   thefile.close()
+
+   return count
+
+# 输入：绝对文件路径
+# 输出: 将包名加入列表中
+def list_package_name(path):
+   
+   # 列出文件夹下的文件
+   file_list = os.listdir(path)
+   #print file_list
+   # 该文件夹中是否包含java文件或者子文件夹
+   has_java_file=False
+   java_file=''
+   has_dir=False
+   java_count=0
+   java_lines_total=0
+   java_list=[]
+   for item in file_list:
+       #print item
+       if item.__contains__('.java'):
+          java_file=item
+          java_list.insert(java_count, item)
+          java_count = java_count + 1
+          java_lines_total = java_lines_total + get_lines_count(os.path.abspath(item))
+          has_java_file=True
+       item=os.path.abspath(item)
+       #print item
+       #print 'item', item
+       if os.path.isdir(item):
+          has_dir=True
+   # 如果文件中有java文件
+   #print 'java_file = ',java_file
+   #print 'has_dir = ',has_dir
+   if has_java_file:
+      # 取出java文件中的package信息
+      java_file=os.path.abspath(java_file)
+      f = open(java_file)
+      line = f.readline()
+      # 文件行数
+      while line:
+         if line.__contains__('package '):
+             #print 'match: ',line
+             # 包名信息
+             result = line.split(' ')[1].split(';')[0]
+             result = result + " @[files:"+ bytes(java_count) + " lines: " + bytes(java_lines_total) + "]"
+             global pkg_list
+             global totalCount
+             global show_detail
+             global totalFiles
+             global totalLines
+             totalFiles = totalFiles + len(java_list)
+             totalLines = totalLines + java_lines_total
+             if show_detail:
+                 print '\t', result
+                 java_list.sort()
+                 for java in java_list:
+                     print '\t\t',java
+             else:
+                 pkg_list.insert(totalCount, result)
+                 print '\t', result
+             totalCount = totalCount + 1
+             break
+         line = f.readline()
+      f.close()
+   # 文件中没有java文件
+   if has_dir:
+      for item in file_list:
+          abs_item = os.path.abspath(item)
+          # 如果包含子文件夹
+          if os.path.isdir(abs_item):
+              #print 'dir item :', abs_item
+              # 列出子文件的文件，执行相同操作
+              # 进入新的文件夹
+              old_dir = os.getcwd()
+              new_dir = old_dir+"/" + item
+              os.chdir(new_dir) 
+              list_package_name(abs_item)
+              # 返回前一个文件夹
+              os.chdir(old_dir)
+          # 没有包含子文件夹 结束此次搜索
+
+#### main
+
+current_path = os.getcwd() 
+global totalCount
+global totalFiles
+global totalLines
+totalCount = 0
+totalFiles = 0
+totalLines = 0
+
+global show_detail
+show_detail = sys.argv.__contains__('-d')
+
+global pkg_list
+pkg_list=[]
+
+list_package_name(current_path)
+pkg_list.sort()
+#print 'Package name list:'
+#for pkg in pkg_list:
+#   print '\t',pkg
+print 'Total packages: ', totalCount
+print 'Total files: ', totalFiles
+print 'Total lines:', totalLines

@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# usage
+# tlogcat -p [package name]   cat the specified pid log
+# tlogcat -c   : clean the log history for device
+# tlogcat   :read the log tag history
+# tlogcat [log tag]   :根据log标签输出包含标签内容的log信息
+
+
+cache_file="/data/nishome/tdsw1/tongkao.chen/cache/tlog_key"
+
+case "$1" in
+   "-p")
+   pidcat.sh $2
+   exit
+   ;;
+   "-c")
+   echo "adb logcat -c"
+   adb logcat -c
+   exit
+   ;;
+esac
+input=1
+MAX_DISPLAY_LINES=25
+case $# in
+   0)
+     if [ ! -f $cache_file ]; then
+         exit
+     fi
+     lines=$(sed -n "$=" $cache_file)
+     max_index=$MAX_DISPLAY_LINES
+     if [ $lines -lt $max_index ]; then
+        max_index=$lines
+     fi
+
+     head -n $max_index $cache_file > temp.file
+     cat -n temp.file
+     rm temp.file
+     while [ $lines -gt 1 ]; do
+        echo -n "Tags: "
+        read input
+        echo
+        if [ $input == q ]; then
+           exit
+        fi
+        if [ $input -gt 0 ] && [ $input -le $max_index ]; then
+           break
+        fi
+        echo "Tags value is 1 ~ ${max_index} "
+     done
+     tag_in=$(sed -n "${input}p" $cache_file)
+     if [ $lines == 1 ]; then
+         tag_in=$(sed -n "1p" $cache_file)
+     else
+        # update history
+        sed -i "${input}d" $cache_file
+        sed -i "1i${tag_in}" $cache_file
+     fi
+     ;;
+   *)
+     tag_in="$*"
+     if [ ! -f $cache_file ]; then
+         touch $cache_file
+         echo $tag_in > $cache_file
+     else 
+         lines=$(sed -n "$=" $cache_file)
+         if [ $lines -ge 100 ]; then
+            sed -i "${lines}d" $cache_file
+         fi
+         is_exist=$(head -n $MAX_DISPLAY_LINES $cache_file | grep -n "${tag_in}")
+         if [ $? == 2 ]; then
+            echo "exit when error"
+            exit
+         fi
+         if [ "" == "$is_exist" ]; then
+             sed -i "1i${tag_in}" $cache_file
+         fi
+     fi
+   ;;
+esac
+
+for tag in $tag_in;
+do
+    target="$tag|$target"
+done
+log_tag=$(echo $target | sed "s/.$//")
+
+#echo $log_tag
+
+if [ "" == "$log_tag" ]; then
+  echo "log tag is empty"
+  exit
+fi
+log_file="$(date +%H%M).log"
+#adb logcat -c
+adb logcat -b all | tee $log_file | grep -E "$log_tag" --color
+
+
